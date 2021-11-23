@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Pyrffect duration="1" framerate="1">
-    <calc filename="fond2.png"/>
+<Pyrffect framerate="30" duration="20" out="test.mp4">
+    <calc filename="fond.png"/>
+    <firework x_stat="40,410" y_stat="30,140,462" duration="2,3" intensity="1,2" pause="2,3" colors="all"/>
     <calc filename="tree.png"/>
+    <calc filename="tree_top.png">
+        <pixel square_size="3" displace_probability="0.6" ticks="2"/>
+        <!-- <light name="fire"/>-->
+    </calc>
 </Pyrffect>

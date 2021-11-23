@@ -11,12 +11,20 @@ class Calc:
     effects: Iterator[effect.Effect]
     width: int
     height: int
+    TIMESTEP: float = 0.33
 
-    def __init__(self, filename: str = None):
+    @staticmethod
+    def set_timestep(timestep):
+        Calc.TIMESTEP = timestep
+
+    def __init__(self, filename: str = None, master=None):
         self.buffer = None
         self.effects = []
         if filename is not None:
             self.open(filename)
+
+    def set_dim(self, width: int, height: int):
+        raise Exception("The dimension of a normal Calc are fixed")
 
     def reset(self):
         pass
@@ -47,6 +55,5 @@ class Calc:
 
     def save_as(self, name: str):
         out = (self.out_buffer * np.array([1, 1, 1, 255])).astype(np.uint8)
-        print(out)
         img = Image.fromarray(out, mode="RGBA")
         img.save(name)

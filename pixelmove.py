@@ -10,35 +10,62 @@ class PixelMove(Effect):
     square_size: int
     displace_probability: float
     area_covered: float
+    ticks: int
+    period: int
+
+    last_transform: list
 
     def __init__(
         self,
         square_size: int = 1,
         displace_probability: float = 0.3,
         area_covered: float = 0.4,
+        ticks: int = 1,
     ) -> None:
-        super().__init__()
-        self.square_size = square_size
-        self.displace_probability = displace_probability
-        self.area_covered = area_covered
+        self.square_size = int(square_size)
+        self.displace_probability = float(displace_probability)
+        self.area_covered = float(area_covered)
+        self.ticks = 0
+        self.period = int(ticks)
+        self.last_transform = None
+
+    def apply_last_transform(self, other: Calc):
+        if self.last_transform is None:
+            return
+        for (x, y, fx, fy, nx, ny, nfx, nfy) in self.last_transform:
+            other.out_buffer[nx:nfx, ny:nfy] = other.out_buffer[x:fx, y:fy]
 
     def apply(self, other: Calc):
+        self.ticks += 1
+        if self.ticks < self.period:
+            return self.apply_last_transform(other)
+        self.last_transform = []
+        self.ticks = 0
         width, height = other.width, other.height
-        dimension = width * height // self.square_size
-        positions = (
-            (random.randrange(width), random.randrange(height))
-            for _ in range(dimension)
+        dimension = int(width * height // self.square_size * self.area_covered)
+        positions = zip(
+            np.random.rand(dimension),
+            np.random.randint(0, width - 1, dimension),
+            np.random.randint(0, height - 1, dimension),
         )
-        for (x, y) in positions:
-            if not np.any(
-                other.out_buffer[x : x + self.square_size, y : y + self.square_size, 3]
-                < 0.01
-            ):
-                if random.random() < self.displace_probability:
-                    vx, vy = random.choice(((1, 0), (-1, 0), (0, 1), (0, -1)))
+        for (tirage, x, y) in positions:
+            fx = min(width, x + self.square_size)
+            fy = min(height, y + self.square_size)
+            if not np.any(other.out_buffer[x:fx, y:fy, 3] < 0.01):
+                if tirage < self.displace_probability:
+                    vx, vy = [(1, 0), (-1, 0), (0, 1), (0, -1)][int(tirage * 1000) % 4]
                     nx, ny = x + vx, y + vy
-                    other.out_buffer[
-                        nx : nx + self.square_size, ny : ny + self.square_size
-                    ] = other.out_buffer[
-                        x : x + self.square_size, y : y + self.square_size
-                    ]
+                    if nx < 0:
+                        nx = 0
+                        x += 1
+                    if ny < 0:
+                        ny = 0
+                        y += 1
+                    nfx = min(width, fx + vx)
+                    nfy = min(height, fy + vy)
+                    if nfx - nx < fx - x:
+                        fx -= 1
+                    if nfy - ny < fy - y:
+                        fy -= 1
+                    self.last_transform.append((x, y, fx, fy, nx, ny, nfx, nfy))
+                    other.out_buffer[nx:nfx, ny:nfy] = other.out_buffer[x:fx, y:fy]

@@ -1,4 +1,3 @@
-from os import WIFCONTINUED
 import fusion_mode
 import fusion_linear
 from typing import Any, Tuple
