@@ -1,32 +1,40 @@
-from typing import Any, Iterator
+from typing import Any, Iterator, Union
 import numpy as np
 from PIL import Image
 import effect
 import output_image
 
-Effect = effect.Effect
-OutputImage = output_image.OutputImage 
 
 class Calc:
     buffer: np.ndarray
     out_buffer: np.ndarray
-    effects: Iterator(Effect)
+    effects: Iterator[effect.Effect]
     width: int
     height: int
 
-    def __init__(self):
+    def __init__(self, filename: str = None):
         self.buffer = None
         self.effects = []
+        if filename is not None:
+            self.open(filename)
 
-    def add_effect(self, effect: Effect):
+    def reset(self):
+        pass
+
+    def add_effect(self, effect: effect.Effect):
         self.effects.append(effect)
 
     def open(self, filename: str):
-        self.buffer = np.array(Image.open(filename, mode="rgba"))
+        img = Image.open(filename)
+        img = img.convert("RGBA")
+        self.buffer = np.array(img).astype(np.float32)
+        self.buffer[:, :, 3] /= 255.0
+        print(self.buffer.dtype)
         self.out_buffer = np.copy(self.buffer)
-        self.width, self.height, _, _ = self.buffer.shape()
+        self.width, self.height, _ = self.buffer.shape
+        self.save_as("test.png")
 
-    def compute(self, output: Any(str, OutputImage)):
+    def compute(self, output: Union[str, output_image.OutputImage]):
         if self.buffer is None:
             raise NotImplementedError
         self.out_buffer[:, :, :] = self.buffer
@@ -38,6 +46,7 @@ class Calc:
             output.paste_on(self.out_buffer)
 
     def save_as(self, name: str):
-        img = Image.new("rgb", (self.width, self.height))
-        img.putdata(self.out_buffer.reshape((self.width*self.height*3)))
+        out = (self.out_buffer * np.array([1, 1, 1, 255])).astype(np.uint8)
+        print(out)
+        img = Image.fromarray(out, mode="RGBA")
         img.save(name)

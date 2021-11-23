@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Pyrffect duration="1" framerate="1">
+    <calc filename="fond2.png"/>
+    <calc filename="tree.png"/>
+</Pyrffect>
