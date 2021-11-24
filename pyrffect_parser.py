@@ -1,6 +1,7 @@
 import os
 import sys
 from calc import Calc
+from firework import Firework
 from fusion_mode import FusionMode
 from fusion_linear import FusionLinear
 from pixelmove import PixelMove
@@ -14,7 +15,7 @@ effects = {
 
 calc_types = {
     "calc": Calc,
-    "firework": None,
+    "firework": Firework,
 }
 
 fusions = {
@@ -25,10 +26,14 @@ fusions = {
 named_effects = {}
 
 
-def compare_wh(w, h, nw, nh):
-    if w is None or (w > 0 and nw > w):
+def compare_wh(w, h, x, y, nw, nh):
+    if nw is not None:
+        nw += x
+    if nh is not None:
+        nh += y
+    if nw is not None and (w is None or (w > 0 and nw > w)):
         w = nw
-    if h is None or (h > 0 and nh > h):
+    if nh is not None and (h is None or (h > 0 and nh > h)):
         h = nh
     return w, h
 
@@ -41,7 +46,7 @@ def parse_effects(nd: Et.Element, calc: Calc):
         calc.add_effect(new_effect)
 
 
-def parse_calc(nd: Et.Element, w, h):
+def parse_calc(nd: Et.Element, w, h, master=None):
     results_elem = []
     for child_node in nd:
         if child_node.tag not in calc_types:
@@ -51,25 +56,27 @@ def parse_calc(nd: Et.Element, w, h):
             continue
         x, y = 0, 0
         order = None
-        pos = {}
         if "x" in child_node.attrib:
-            pos["x"] = int(child_node.attrib["x"])
+            x = int(child_node.attrib["x"])
             child_node.attrib.pop("x")
         if "y" in child_node.attrib:
-            pos["y"] = int(child_node.attrib["y"])
+            y = int(child_node.attrib["y"])
             child_node.attrib.pop("y")
         if "order" in child_node.attrib:
             order = child_node.attrib["order"]
             child_node.attrib.pop("order")
-        new_calc = calc_types[child_node.tag](**child_node.attrib)
-        w, h = compare_wh(w, h, x + new_calc.width, y + new_calc.height)
+        new_calc = calc_types[child_node.tag](
+            master=master, coords=(x, y), **child_node.attrib
+        )
+        w, h = compare_wh(w, h, x, y, new_calc.width, new_calc.height)
         parse_effects(child_node, new_calc)
 
-        results_elem.append((new_calc, order, pos))
+        results_elem.append((new_calc, order))
     return results_elem, w, h
 
 
 if __name__ == "__main__":
+    DEBUG = True
     if len(sys.argv) < 2:
         print("No file given", file=sys.stderr)
         sys.exit(2)
@@ -89,8 +96,10 @@ if __name__ == "__main__":
     p = Pyrffect("OUT", "img{}.png")
 
     try:
-        calcs, w, h = parse_calc(root, w, h)
+        calcs, w, h = parse_calc(root, w, h, master=p)
     except Exception as e:
+        if DEBUG:
+            raise e
         print(e, file=sys.stderr)
         sys.exit(1)
 
@@ -108,8 +117,8 @@ if __name__ == "__main__":
             sys.exit(2)
         p.set_fusionmode(fusions[fusion]())
 
-    for c, order, pos in calcs:
-        p.add_calc(c, order, pos)
+    for c, order in calcs:
+        p.add_calc(c, order)
 
     framerate = 60
     duration = 10
@@ -146,3 +155,6 @@ if __name__ == "__main__":
     if "out" in root.attrib:
         command = f"ffmpeg -r 30 -f image2 -i OUT/img%d.png -vcodec libx264 -crf 25 {root.attrib['out']}"
         os.system(command)
+
+    if "remove" in root.attrib and root.attrib["remove"] in ("true", "t", "1"):
+        os.system("rm OUT/img*.png")

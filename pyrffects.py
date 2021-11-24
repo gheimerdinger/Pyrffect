@@ -5,7 +5,7 @@ from effect import Effect
 from fusion_linear import FusionMode
 
 CalcPos = Dict[str, int]
-Couche = Tuple[int, Calc, CalcPos]
+Couche = Tuple[int, Calc]
 
 
 class Pyrffect:
@@ -41,10 +41,10 @@ class Pyrffect:
         self.last_valid = None
         self.size_listener = []
 
-    def add_calc(self, calc, order: int = None, pos: CalcPos = {}):
+    def add_calc(self, calc, order: int = None):
         if order is None:
             order = self.calc_seq
-        self.calcs[self.calc_seq] = (order, calc, pos)
+        self.calcs[self.calc_seq] = (order, calc)
         self.calc_seq += 1
         return self.calc_seq - 1
 
@@ -95,20 +95,19 @@ class Pyrffect:
 
         calcs = [self.calcs[key] for key in self.calcs]
 
-        return [(e, p) for (_, e, p) in split(calcs)]
+        return [(e) for (_, e) in split(calcs)]
 
     def compute(self, frame: int):
         if self.width is None or self.height is None:
             raise Exception("No valid dimension to compite the pyrffect.")
         output_result = OutputImage(self.width, self.height, self.fusion_mode)
         orderer_calc = self._fuse()
-        for (c, _) in orderer_calc:
+        for c in orderer_calc:
             c.reset()
         self.last_valid = None
         for i in range(frame):
             filename = (self.output_directory + "/" + self.output_fileformat).format(i)
-            for (c, pos) in orderer_calc:
-                output_result.set_coords(**pos)
+            for c in orderer_calc:
                 c.compute(output_result)
             output_result.save(filename)
             output_result.reset()

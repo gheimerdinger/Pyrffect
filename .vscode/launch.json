@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Curve",
+            "type": "python",
+            "request": "launch",
+            "program": "curve.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python : Fichier actuel",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Firework",
+            "type": "python",
+            "request": "launch",
+            "program": "pyrffect_parser.py",
+            "console": "integratedTerminal",
+            "args": [
+                "bimbamboum.xml"
+            ]
+        }
+    ]
+}

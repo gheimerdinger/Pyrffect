@@ -1,4 +1,4 @@
-from typing import Any, Iterator, Union
+from typing import Any, Iterator, Tuple, Union
 import numpy as np
 from PIL import Image
 import effect
@@ -11,15 +11,17 @@ class Calc:
     effects: Iterator[effect.Effect]
     width: int
     height: int
-    TIMESTEP: float = 0.33
+    coords: Tuple[int, int]
+    TIMESTEP: float = 0.033
 
     @staticmethod
     def set_timestep(timestep):
         Calc.TIMESTEP = timestep
 
-    def __init__(self, filename: str = None, master=None):
+    def __init__(self, filename: str = None, coords=(0, 0), master=None):
         self.buffer = None
         self.effects = []
+        self.coords = coords
         if filename is not None:
             self.open(filename)
 
@@ -51,7 +53,7 @@ class Calc:
         if type(output) is str:
             self.save_as(output)
         else:
-            output.paste_on(self.out_buffer)
+            output.paste_on(self)
 
     def save_as(self, name: str):
         out = (self.out_buffer * np.array([1, 1, 1, 255])).astype(np.uint8)
