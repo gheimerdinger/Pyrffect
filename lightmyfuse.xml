@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Pyrffect out="test_par.mp4" framerate="30" duration="10" remove="true">
+    <flat/>
+    <calc filename="tree.png"/>
+    <calc filename="tree_top.png">
+        <light coords="10,10"/>
+    </calc>
+</Pyrffect>

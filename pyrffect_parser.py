@@ -4,18 +4,22 @@ from calc import Calc
 from firework import Firework
 from fusion_mode import FusionMode
 from fusion_linear import FusionLinear
+from lighteffect import LightEffect
 from pixelmove import PixelMove
 from pyrffects import Pyrffect
+from flat import Flat
 import xml.etree.ElementTree as Et
 import getopt
 
 effects = {
     "pixel": PixelMove,
+    "light": LightEffect,
 }
 
 calc_types = {
     "calc": Calc,
     "firework": Firework,
+    "flat": Flat,
 }
 
 fusions = {

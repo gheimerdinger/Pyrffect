@@ -1,7 +1,9 @@
+import os
 from tkinter import Widget
 from typing import List, Tuple, Union
 from PIL.Image import TRANSPOSE
 import numpy as np
+import datetime
 
 
 class Curve:
@@ -33,10 +35,16 @@ class CappedCurve(Curve):
 
     def calc(self, t):
         value = self.child_curve.calc(t)
-        if self.maxi is not None and value > self.maxi:
-            value = self.maxi
-        if self.mini is not None and value < self.mini:
-            value = self.mini
+        if type(t) == float:
+            if self.maxi is not None and value > self.maxi:
+                value = self.maxi
+            if self.mini is not None and value < self.mini:
+                value = self.mini
+        else:
+            if self.maxi is not None:
+                value[value > self.maxi] = self.maxi
+            if self.mini is not None:
+                value[value < self.mini] = self.mini
         return value
 
 
@@ -74,9 +82,9 @@ class PolynomCurve(Curve):
 class PolynomPointCurve(Curve):
     control_points: List[Tuple[float, float]]
     true_curve: Curve
-    entete: str = ""
+    seuil: int
 
-    def __init__(self, control_points: Union[str, List[Tuple[float, float]]]):
+    def __init__(self, control_points: Union[str, List[Tuple[float, float]]], seuil=9):
         if type(control_points) == str:
             self.control_points = [
                 tuple([float(c) for c in p.split(",")])
@@ -84,12 +92,10 @@ class PolynomPointCurve(Curve):
             ]
         else:
             self.control_points = control_points
-        print(PolynomPointCurve.entete, len(self.control_points), flush=True)
-        if len(self.control_points) > 9:
+        if len(self.control_points) > seuil:
             sorted_control_point = []
             while len(self.control_points) > 0:
                 index, value = 0, self.control_points[0][0]
-                print(self.control_points)
                 for i, (v, _) in enumerate(self.control_points):
                     if v < value:
                         value = v
@@ -98,8 +104,8 @@ class PolynomPointCurve(Curve):
             mid_index = len(sorted_control_point) // 2
             mid_val = sorted_control_point[mid_index][0]
             self.true_curve = SplitCurve(
-                PolynomPointCurve(sorted_control_point[: mid_index + 1]),
-                PolynomPointCurve(sorted_control_point[mid_index:]),
+                PolynomPointCurve(sorted_control_point[: mid_index + 1], seuil),
+                PolynomPointCurve(sorted_control_point[mid_index:], seuil),
                 split_t=mid_val,
             )
         else:
@@ -110,10 +116,12 @@ class PolynomPointCurve(Curve):
         return self.true_curve.calc(t)
 
     def __str__(self):
-        res = ""
+        resA = ""
+        resB = "["
         for cp in self.control_points:
-            res += f"{cp[0]},{cp[1]};"
-        return res[:-1]
+            resA += f"{cp[0]},{cp[1]};"
+            resB += f"({cp[0]}, {cp[1]}), "
+        return resA[:-1] + "\n" + resB + "]"
 
     def solve_polynome(self):
         n = len(self.control_points) - 1
@@ -206,10 +214,27 @@ class SplitCurve(Curve):
         self.split_t = split_t
 
     def calc(self, t):
-        if t > self.split_t:
-            return self.curve_b.calc(t)
+        if type(t) == float:
+            if t > self.split_t:
+                return self.curve_b.calc(t)
+            else:
+                return self.curve_a.calc(t)
         else:
-            return self.curve_a.calc(t)
+            #! Absolutely not opti, expo with each imbriquation
+            value_B = self.curve_b.calc(t)
+            value_A = self.curve_a.calc(t)
+            value_A[t > self.split_t] = value_B
+            return value_A
+
+
+class BezierCurve(Curve):
+    control_points: List[Tuple[float, float]]
+
+    def __init__(self, control_points: Union[List[Tuple[float, float]], str]):
+        if type(control_points) == str:
+            self.control_points = []
+        else:
+            self.control_points = control_points
 
 
 if __name__ == "__main__":
@@ -247,6 +272,7 @@ if __name__ == "__main__":
         points: List[Point]
         width: int
         height: int
+        rewrite: False
 
         def __init__(self, master, width: int = 400, height: int = 400):
             tk.Frame.__init__(self, master)
@@ -268,6 +294,20 @@ if __name__ == "__main__":
             self.points = []
             self.seq_point = 0
             self.curve = None
+            self.rewrite = False
+
+            if os.path.exists("log_curve.txt"):
+                os.system("cp -f log_curve.txt /tmp/log_curve.txt")
+                self.rewrite = True
+            self.log = open("log_curve.txt", mode="w")
+            self.log.write(f"___________________\n{datetime.datetime.now()}\n")
+            on_closing.close_f.append(self.on_close)
+
+        def on_close(self):
+            self.log.close()
+            if self.rewrite:
+                print("yes")
+                os.system("cat /tmp/log_curve.txt >> log_curve.txt")
 
         def left_click(self, event: tk.Event):
             x, y = event.x, event.y
@@ -303,6 +343,7 @@ if __name__ == "__main__":
                     self.can_trace.create_line(x, y, xp, yp, tags="curve")
                     xp = x
                     yp = y
+                self.log.write(f"{self.curve}\n")
 
         def clean_curve(self):
             self.can_trace.delete("curve")
@@ -310,7 +351,18 @@ if __name__ == "__main__":
 
     fen = tk.Tk()
 
+    def on_closing():
+        for f in on_closing.close_f:
+            f()
+        fen.destroy()
+
+    on_closing.close_f = []
+    fen.protocol("WM_DELETE_WINDOW", on_closing)
+
     trac = Tracer(fen)
     trac.pack()
 
-    fen.mainloop()
+    try:
+        fen.mainloop()
+    except KeyboardInterrupt:
+        on_closing()

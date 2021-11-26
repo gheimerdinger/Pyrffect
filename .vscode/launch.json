@@ -5,6 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Light",
+            "type": "python",
+            "request": "launch",
+            "program": "pyrffect_parser.py",
+            "console": "integratedTerminal",
+            "args": [
+                "lightmyfuse.xml"
+            ]
+        },
+        {
             "name": "Curve",
             "type": "python",
             "request": "launch",
