@@ -19,10 +19,14 @@ class Flat(Calc):
         coords=(0, 0),
         master=None,
     ):
+        super().__init__(coords, master)
         self.color = color
+        if type(self.color) == str:
+            self.color = [float(e) for e in color.split(",")]
+            if len(self.color) == 3:
+                self.color.append(1.0)
         self.width = width
         self.height = height
-        self.coords = coords
         self.listen_size = False
         if self.width is None or self.height is None:
             self.listen_size = True
@@ -32,7 +36,6 @@ class Flat(Calc):
                 (self.width, self.height, 4), self.color, dtype=np.float32
             )
         self.buffer = None
-        self.master = master
 
     def set_dim(self, width, height, event=True):
         self.width = width
@@ -49,7 +52,4 @@ class Flat(Calc):
     def compute(self, output: Union[str, OutputImage]):
         if self.out_buffer is None:
             raise Exception("Flat surface was never given a size to be displayed")
-        if type(output) == str:
-            self.save_as(output)
-        else:
-            output.paste_on(self)
+        super().compute(output)

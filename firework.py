@@ -70,6 +70,7 @@ class Firework(Calc):
         coords: Tuple[int, int] = (0, 0),
         master=None,
     ) -> None:
+        super().__init__(coords=coords, master=master)
         self.image_processed = None
         self.image_drawer = None
         self.color = None
@@ -77,7 +78,6 @@ class Firework(Calc):
         self.height = None
         self.ray_width = ray_width
 
-        self.coords = coords
         self.min_x, self.max_x = map(int, x_stat.split(","))
         self.min_y, self.max_y, self.start_y = map(int, y_stat.split(","))
         self.min_duration, self.max_duration = map(float, duration.split(","))
@@ -97,8 +97,8 @@ class Firework(Calc):
         self.launch_curve_d0 = LinearCurve(a=-0.8, b=1)
         self.launch_curve_d1 = CappedCurve(LinearCurve(a=-1, b=1), mini=0)
 
-        self.blow_curve_d0 = LinearCurve(a=0.9)
-        self.blow_curve_d1 = CappedCurve(LinearCurve(a=1), mini=0)
+        self.blow_curve_d0 = LinearCurve(a=1)
+        self.blow_curve_d1 = CappedCurve(LinearCurve(a=0.85, b=0.15), maxi=1)
 
         master.add_size_listener(self)
 
@@ -203,15 +203,16 @@ class Firework(Calc):
                 (x0, y0, x1, y1), fill=self.color, width=self.ray_width
             )
 
+        self.out_buffer = np.array(
+            # self.image_processed
+            self.image_processed.resize(
+                (self.width, self.height), resample=Image.ANTIALIAS
+            ).convert("RGBA")
+        ).astype(np.float32)
+        self.apply_effects()
         if type(output) == str:
             self.save_as(output)
         else:
-            self.out_buffer = np.array(
-                # self.image_processed
-                self.image_processed.resize(
-                    (self.width, self.height), resample=Image.ANTIALIAS
-                ).convert("RGBA")
-            ).astype(np.float32)
             self.out_buffer[:, :, 3] /= 255
             output.paste_on(self)
 
@@ -230,18 +231,18 @@ class Firework(Calc):
         d1 = self.launch_curve_d1.calc(t) * self.ref_dist
         x0, y0 = self.final_x, d0 * math.sin(ray) + self.final_y
         x1, y1 = self.final_x, d1 * math.sin(ray) + self.final_y
-        print(d0, d1)
         self.image_drawer.line((x0, y0, x1, y1), fill=self.color, width=self.ray_width)
 
+        self.out_buffer = np.array(
+            # self.image_processed
+            self.image_processed.resize(
+                (self.width, self.height), resample=Image.ANTIALIAS
+            ).convert("RGBA")
+        ).astype(np.float32)
+        self.apply_effects()
         if type(output) == str:
             self.save_as(output)
         else:
-            self.out_buffer = np.array(
-                # self.image_processed
-                self.image_processed.resize(
-                    (self.width, self.height), resample=Image.ANTIALIAS
-                ).convert("RGBA")
-            ).astype(np.float32)
             self.out_buffer[:, :, 3] /= 255
             output.paste_on(self)
 
@@ -250,8 +251,3 @@ class Firework(Calc):
 
     def reset(self):
         self.enter_phase(self.FW_PAUSE)
-
-    def save_as(self, name: str):
-        self.image_processed.resize(
-            (self.width, self.height), resample=Image.LANCZOS
-        ).save(name)

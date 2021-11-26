@@ -41,7 +41,7 @@ class PixelMove(Effect):
             return self.apply_last_transform(other)
         self.last_transform = []
         self.ticks = 0
-        width, height = other.width, other.height
+        width, height, _ = other.out_buffer.shape
         dimension = int(width * height // self.square_size * self.area_covered)
         positions = zip(
             np.random.rand(dimension),
@@ -51,21 +51,20 @@ class PixelMove(Effect):
         for (tirage, x, y) in positions:
             fx = min(width, x + self.square_size)
             fy = min(height, y + self.square_size)
-            if not np.any(other.out_buffer[x:fx, y:fy, 3] < 0.01):
-                if tirage < self.displace_probability:
-                    vx, vy = [(1, 0), (-1, 0), (0, 1), (0, -1)][int(tirage * 1000) % 4]
-                    nx, ny = x + vx, y + vy
-                    if nx < 0:
-                        nx = 0
-                        x += 1
-                    if ny < 0:
-                        ny = 0
-                        y += 1
-                    nfx = min(width, fx + vx)
-                    nfy = min(height, fy + vy)
-                    if nfx - nx < fx - x:
-                        fx -= 1
-                    if nfy - ny < fy - y:
-                        fy -= 1
-                    self.last_transform.append((x, y, fx, fy, nx, ny, nfx, nfy))
-                    other.out_buffer[nx:nfx, ny:nfy] = other.out_buffer[x:fx, y:fy]
+            if tirage < self.displace_probability:
+                vx, vy = [(1, 0), (-1, 0), (0, 1), (0, -1)][int(tirage * 1000) % 4]
+                nx, ny = x + vx, y + vy
+                if nx < 0:
+                    nx = 0
+                    x += 1
+                if ny < 0:
+                    ny = 0
+                    y += 1
+                nfx = min(width, fx + vx)
+                nfy = min(height, fy + vy)
+                if nfx - nx < fx - x:
+                    fx -= 1
+                if nfy - ny < fy - y:
+                    fy -= 1
+                self.last_transform.append((x, y, fx, fy, nx, ny, nfx, nfy))
+                other.out_buffer[nx:nfx, ny:nfy] = other.out_buffer[x:fx, y:fy]

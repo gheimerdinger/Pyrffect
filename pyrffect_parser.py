@@ -4,6 +4,7 @@ from calc import Calc
 from firework import Firework
 from fusion_mode import FusionMode
 from fusion_linear import FusionLinear
+from imagecalc import ImageCalc
 from lighteffect import LightEffect
 from pixelmove import PixelMove
 from pyrffects import Pyrffect
@@ -17,7 +18,7 @@ effects = {
 }
 
 calc_types = {
-    "calc": Calc,
+    "calc": ImageCalc,
     "firework": Firework,
     "flat": Flat,
 }

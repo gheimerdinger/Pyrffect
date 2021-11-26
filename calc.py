@@ -1,29 +1,31 @@
-from typing import Any, Iterator, Tuple, Union
+from typing import Any, Iterator, Sequence, Tuple, Union
 import numpy as np
 from PIL import Image
 import effect
 import output_image
 
+Master_ = Union["Pyrffect", None]
+
 
 class Calc:
     buffer: np.ndarray
     out_buffer: np.ndarray
-    effects: Iterator[effect.Effect]
+    effects: Sequence[effect.Effect] = []
     width: int
     height: int
     coords: Tuple[int, int]
     TIMESTEP: float = 0.033
+    master: Master_
 
     @staticmethod
     def set_timestep(timestep):
         Calc.TIMESTEP = timestep
 
-    def __init__(self, filename: str = None, coords=(0, 0), master=None):
+    def __init__(self, coords=(0, 0), master: Master_ = None):
         self.buffer = None
         self.effects = []
         self.coords = coords
-        if filename is not None:
-            self.open(filename)
+        self.master = master
 
     def set_dim(self, width: int, height: int):
         raise Exception("The dimension of a normal Calc are fixed")
@@ -34,22 +36,12 @@ class Calc:
     def add_effect(self, effect: effect.Effect):
         self.effects.append(effect)
 
-    def open(self, filename: str):
-        img = Image.open(filename)
-        img = img.convert("RGBA")
-        self.buffer = np.array(img).astype(np.float32)
-        self.buffer[:, :, 3] /= 255.0
-        print(self.buffer.dtype)
-        self.out_buffer = np.copy(self.buffer)
-        self.width, self.height, _ = self.buffer.shape
-        self.save_as("test.png")
-
-    def compute(self, output: Union[str, output_image.OutputImage]):
-        if self.buffer is None:
-            raise NotImplementedError
-        self.out_buffer[:, :, :] = self.buffer
+    def apply_effects(self):
         for e in self.effects:
             e.apply(self)
+
+    def compute(self, output: Union[str, output_image.OutputImage]):
+        self.apply_effects()
         if type(output) is str:
             self.save_as(output)
         else:
