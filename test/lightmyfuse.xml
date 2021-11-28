@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Pyrffect out="test_par.mp4" framerate="30" duration="10" remove="true">
     <calc filename="fond.png">
-        <light coords="10,10"/>
+        <light coords="10,10" color="127,0,200" dist_step="400" intensity="0.6"/>
     </calc>
     <calc filename="tree.png">
-        <light coords="10,10" intensity="1.75" dist_step="250"/>
+        <light coords="10,10" intensity="1.75" dist_step="20"/>
     </calc>
     <calc filename="tree_top.png">
         <pixel ticks="3" square_size="3" displace_probability="0.6"/>
-        <light coords="10,10" intensity="2" dist_step="200"/>
+        <light coords="10,10" intensity="1.1" dist_step="400" color="127,0,200"/>
     </calc>
 </Pyrffect>

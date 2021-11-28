@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Pyrffect framerate="30" duration="20" out="test.mp4" width="800" remove="true">
+    <calc filename="fond2.png"/>
+    <firework x_stat="50,300" y_stat="81,240,555" duration="2,3" intensity="0.95,1.1" pause="0.2,0.5" colors="all" name_effect="boum" ray_width="10" size_amplifier="3" flickering="0.4">
+        <pixel square_size="4" ticks="1" displace_probability="0.75" area_covered="0.95"/>
+    </firework>
+    <calc filename="tree_sol.png" x="0" y="395">
+        <named name="boum"/>
+    </calc>
+    <calc filename="tree_top.png" x="458" y="123">
+        <pixel square_size="3" displace_probability="0.6" ticks="3"/>
+        <named name="boum"/>
+    </calc>
+</Pyrffect>

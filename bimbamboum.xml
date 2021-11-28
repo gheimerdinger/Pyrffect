@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Pyrffect width="400" height="400" out="test_feu.mp4" framerate="30" duration="10" remove="true">
-    <firework x_stat="40,410" y_stat="30,140,462" duration="2,3" intensity="1,2" pause="0.2,0.5" colors="all">
-        <pixel square_size="2" ticks="1" displace_probability="0.8" area_covered="1"/>
-    </firework>
-</Pyrffect>

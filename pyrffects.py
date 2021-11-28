@@ -23,6 +23,7 @@ class Pyrffect:
     last_valid: int
 
     size_listener: List[Calc]
+    named_effect: Dict[str, Effect]
 
     def __init__(
         self,
@@ -40,6 +41,18 @@ class Pyrffect:
         self.height = height
         self.last_valid = None
         self.size_listener = []
+        self.named_effect = {}
+
+    def add_named_effect(self, name: str, effect: Effect):
+        if name not in self.named_effect:
+            self.named_effect[name] = effect
+        else:
+            raise Exception(f"Name '{name}' already attributed to another effect.")
+
+    def get_named_effect(self, name: str):
+        if name not in self.named_effect:
+            raise Exception(f"No named effect have '{name}' for name")
+        return self.named_effect[name]
 
     def add_calc(self, calc, order: int = None):
         if order is None:

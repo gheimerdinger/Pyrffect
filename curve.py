@@ -1,5 +1,5 @@
 import os
-from tkinter import Widget
+from tkinter import CallWrapper, Widget
 from typing import List, Tuple, Union
 from PIL.Image import TRANSPOSE
 import numpy as np
@@ -86,6 +86,47 @@ class CappedInCurve(Curve):
             if self.mini is not None:
                 t[t < self.mini] = self.mini
             return self.child_curve.calc(t)
+
+
+class SinCurve(Curve):
+    period: float
+    phase: float
+    dec: float
+    ampl: float
+
+    def __init__(
+        self, period: float = 1, phase: float = 0, dec: float = 0, ampl: float = 1
+    ) -> None:
+        self.period = period
+        self.phase = phase
+        self.ampl = ampl
+        self.dec = dec
+
+    def calc(self, t):
+        return np.sin(t * self.period + self.phase) * self.ampl + self.dec
+
+
+class MulCurve(Curve):
+    curve_a: Curve
+    curve_b: Curve
+
+    def __init__(self, curve_a: Curve, curve_b: Curve) -> None:
+        self.curve_a = curve_a
+        self.curve_b = curve_b
+
+    def calc(self, t):
+        return self.curve_a.calc(t) * self.curve_b.calc(t)
+
+
+class ComposedCurve(Curve):
+    caller: Curve
+    called: Curve
+    def __init__(self, caller: Curve, called: Curve) -> None:
+        self.caller = caller
+        self.called = called
+
+    def calc(self, t):
+        return self.caller.calc(self.called.calc(t))
 
 
 class QuadraticCurve(Curve):

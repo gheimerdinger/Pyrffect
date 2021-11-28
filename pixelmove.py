@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from calc import Calc
+from multiprocessing import Pool
 import effect
 
 Effect = effect.Effect
@@ -14,6 +15,7 @@ class PixelMove(Effect):
     period: int
 
     last_transform: list
+    implementation_clean: bool = True
 
     def __init__(
         self,
@@ -29,42 +31,61 @@ class PixelMove(Effect):
         self.period = int(ticks)
         self.last_transform = None
 
+    def move(self, other, x, y, fx, fy, nx, ny, nfx, nfy):
+        self.tmp_other.out_buffer[nx:nfx, ny:nfy] = other.out_buffer[x:fx, y:fy]
+
     def apply_last_transform(self, other: Calc):
         if self.last_transform is None:
             return
-        for (x, y, fx, fy, nx, ny, nfx, nfy) in self.last_transform:
-            other.out_buffer[nx:nfx, ny:nfy] = other.out_buffer[x:fx, y:fy]
+        if self.implementation_clean:
+            self.apply_clean(other)
+        else:
+            self.apply_dirty(other)
+
+    def apply_dirty(self, other: "calc.Calc"):
+        mp = Pool(len(self.last_transform))
+        self.tmp_other = other
+        mp.starmap(self.move, self.last_transform)
+        mp.close()
+
+    def apply_clean(self, other: "calc.Calc"):
+        dim = self.last_transform.shape[0]
+        self.tmp_other = other
+        for i in range(dim):
+            x, y, fx, fy, nx, ny, nfx, nfy = self.last_transform[i]
+            self.move(other, x, y, fx, fy, nx, ny, nfx, nfy)
 
     def apply(self, other: Calc):
         self.ticks += 1
         if self.ticks < self.period:
             return self.apply_last_transform(other)
-        self.last_transform = []
         self.ticks = 0
         width, height, _ = other.out_buffer.shape
         dimension = int(width * height // self.square_size * self.area_covered)
-        positions = zip(
-            np.random.rand(dimension),
+        tirage = np.random.rand(dimension)
+        tirage = tirage[tirage < self.displace_probability]
+        dimension = tirage.shape[0]
+        x, y = [
             np.random.randint(0, width - 1, dimension),
             np.random.randint(0, height - 1, dimension),
-        )
-        for (tirage, x, y) in positions:
-            fx = min(width, x + self.square_size)
-            fy = min(height, y + self.square_size)
-            if tirage < self.displace_probability:
-                vx, vy = [(1, 0), (-1, 0), (0, 1), (0, -1)][int(tirage * 1000) % 4]
-                nx, ny = x + vx, y + vy
-                if nx < 0:
-                    nx = 0
-                    x += 1
-                if ny < 0:
-                    ny = 0
-                    y += 1
-                nfx = min(width, fx + vx)
-                nfy = min(height, fy + vy)
-                if nfx - nx < fx - x:
-                    fx -= 1
-                if nfy - ny < fy - y:
-                    fy -= 1
-                self.last_transform.append((x, y, fx, fy, nx, ny, nfx, nfy))
-                other.out_buffer[nx:nfx, ny:nfy] = other.out_buffer[x:fx, y:fy]
+        ]
+        fx = np.minimum(x + self.square_size, width)
+        fy = np.minimum(y + self.square_size, height)
+        tirage = ((tirage * 1000) % 4).astype(np.int)
+        vx = np.choose(tirage, [1, -1, 0, 0])
+        vy = np.choose(tirage, [0, 0, 1, -1])
+        nx = x + vx
+        ny = y + vy
+        x[nx < 0] += 1
+        nx[nx < 0] = 0
+        y[ny < 0] += 1
+        ny[ny < 0] = 0
+
+        nfx = np.minimum(fx + vx, width)
+        nfy = np.minimum(fy + vy, height)
+        fx[nfx - nx < fx - x] -= 1
+        fy[nfy - ny < fy - y] -= 1
+
+        self.last_transform = np.stack((x, y, fx, fy, nx, ny, nfx, nfy), axis=-1)
+
+        return self.apply_last_transform(other)

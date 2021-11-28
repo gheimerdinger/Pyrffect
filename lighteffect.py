@@ -23,17 +23,20 @@ class LightEffect(Effect):
         coords: Coords_ = (0, 0),
         color: Color_ = (255, 255, 255),
         intensity: float = 1,
-        dist_step: float = 100,
+        dist_step: float = 20,
     ) -> None:
         self.coords = (
             coords
             if type(coords) != str
             else tuple([float(c) for c in coords.split(",")])
         )
-        self.color = [color[0], color[1], color[2], 255]
+        if type(color) == str:
+            color = [float(e) for e in color.split(",")]
+        self.color = tuple([color[0], color[1], color[2], 255])
         self.intensity = float(intensity)
         self.dist_step = float(dist_step)
-        self.color_tsv = rgb_to_tsv(np.array([[self.color + [255]]]))[:-1]
+        N = np.array([[self.color]])
+        self.color_tsv = rgb_to_tsv(N)[:-1]
         self.color_tsv = tuple([e[0, 0] for e in self.color_tsv])
         self.intensity_curve = PolynomCurve(
             [
@@ -52,39 +55,48 @@ class LightEffect(Effect):
 
     def set_color(self, color: Color_):
         self.color = color
+        N = np.array([[self.color]])
+        self.color_tsv = rgb_to_tsv(N)[:-1]
+        self.color_tsv = tuple([e[0, 0] for e in self.color_tsv])
 
     def set_intensity(self, intensity: float):
         self.intensity = intensity
 
     def set_coords(self, coords: Coords_):
-        self.coords = Coords_
+        self.coords = coords
+
+    def set_dist(self, dist: float):
+        self.dist_step = dist
 
     def apply(self, other: Calc):
-        if self.intensity < 0.001:
+        if self.intensity < 0.00001:
             return
         vx, vy = other.coords
         vx -= self.coords[0]
         vy -= self.coords[1]
 
         intensity_matrix = np.meshgrid(
-            vx + np.arange(other.height), vy + np.arange(other.width)
-        )
-        intensity_matrix = np.sqrt(intensity_matrix[0] ** 2 + intensity_matrix[1] ** 2)
+            vx + np.arange(other.width), vy + np.arange(other.height)
+        )  # why is it reversed...
+        intensity_matrix = intensity_matrix[0] ** 2 + intensity_matrix[1] ** 2
 
         intensity_matrix = self.intensity_curve.calc(
-            intensity_matrix / self.dist_step / self.intensity ** 2
+            intensity_matrix / self.dist_step ** 2 / self.intensity ** 5
         )
 
         t, s, v, alpha = rgb_to_tsv(other.out_buffer)
         tr, sr, vr = self.color_tsv
+        mask = v < 0.001
+        t[mask] = ((tr + 60 * t) % 360)[mask]
         delta_t = tr - t
         t += (
-            (np.cos(2 * np.math.pi / 360 * delta_t) + 1.0)
-            / 2.0
+            ((np.cos(2 * np.math.pi / 360 * delta_t) + 1.0) / 2.0) ** 2
             * intensity_matrix
             * delta_t
         )
-        s += sr * intensity_matrix ** 2
+        self.intensity -= 0.003
+
+        s += sr * intensity_matrix ** 3
         s[s > 1] = 1
         v += vr * intensity_matrix ** 2
         v[v > 1] = 1

@@ -15,6 +15,7 @@ import getopt
 effects = {
     "pixel": PixelMove,
     "light": LightEffect,
+    "named": None,
 }
 
 calc_types = {
@@ -82,6 +83,9 @@ def parse_calc(nd: Et.Element, w, h, master=None):
 
 if __name__ == "__main__":
     DEBUG = True
+    if DEBUG:
+        import cProfile, pstats
+
     if len(sys.argv) < 2:
         print("No file given", file=sys.stderr)
         sys.exit(2)
@@ -99,6 +103,7 @@ if __name__ == "__main__":
     if "height" in root.attrib:
         h = -int(root.attrib["height"])
     p = Pyrffect("OUT", "img{}.png")
+    effects["named"] = p.get_named_effect
 
     try:
         calcs, w, h = parse_calc(root, w, h, master=p)
@@ -145,7 +150,13 @@ if __name__ == "__main__":
             duration = int(a)
 
     try:
-        p.compute(duration * framerate)
+        if DEBUG:
+            cProfile.run("p.compute(duration * framerate)", "stats")
+            stat = pstats.Stats("stats")
+            stat.strip_dirs()
+            stat.dump_stats("pstats")
+        else:
+            p.compute(duration * framerate)
     except KeyboardInterrupt:
         print("Only part of the images were generated")
         if p.last_valid is None:

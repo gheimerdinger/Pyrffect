@@ -2,11 +2,21 @@ from typing import List, Tuple, Union
 
 from numpy.core.fromnumeric import shape
 from calc import Calc
-from curve import Curve, LinearCurve, CappedCurve
+from curve import (
+    ComposedCurve,
+    Curve,
+    LinearCurve,
+    CappedCurve,
+    MulCurve,
+    PolynomCurve,
+    QuadraticCurve,
+    SinCurve,
+)
 import numpy as np
 import random
 import math
 from PIL import Image, ImageDraw
+from lighteffect import LightEffect
 
 from output_image import OutputImage
 
@@ -49,6 +59,8 @@ class Firework(Calc):
     max_intensity: float
     intensity: float
 
+    size_amplifier: float
+
     colors: List[Tuple[int, int, int]]
     color: Tuple[int, int, int]
     rays: List[Angle]
@@ -57,6 +69,10 @@ class Firework(Calc):
     launch_curve_d1: Curve
     blow_curve_d0: Curve
     blow_curve_d1: Curve
+
+    lumiere: LightEffect
+    intensity_curve: Curve
+    flickering: float
 
     def __init__(
         self,
@@ -68,6 +84,9 @@ class Firework(Calc):
         intensity: str = "",
         ray_width: int = 5,
         coords: Tuple[int, int] = (0, 0),
+        name_effect: str = None,
+        size_amplifier: float = 1.0,
+        flickering: float = 1.0,
         master=None,
     ) -> None:
         super().__init__(coords=coords, master=master)
@@ -76,7 +95,11 @@ class Firework(Calc):
         self.color = None
         self.width = None
         self.height = None
-        self.ray_width = ray_width
+        self.ray_width = int(ray_width)
+        self.size_amplifier = float(size_amplifier)
+        self.lumiere = LightEffect(intensity=0)
+        if name_effect is not None and master is not None:
+            self.master.add_named_effect(name_effect, self.lumiere)
 
         self.min_x, self.max_x = map(int, x_stat.split(","))
         self.min_y, self.max_y, self.start_y = map(int, y_stat.split(","))
@@ -90,8 +113,15 @@ class Firework(Calc):
             ]
             self.colors = [(r, g, b, 255) for (r, g, b) in self.colors]
         else:
-            self.colors = [tuple(map(int, c.split(","))) for c in colors.split(";")]
-            self.colors = [(r, g, b, 255) for (r, g, b) in self.colors]
+            colors = [tuple(map(int, c.split(","))) for c in colors.split(";")]
+            self.colors = []
+            for c in colors:
+                if len(c) == 3:
+                    self.colors.append(c + (255,))
+                elif len(c) == 4:
+                    self.colors.append(c)
+                else:
+                    raise Exception(f"Invalid color read {c}")
         self.enter_phase(self.FW_PAUSE)
 
         self.launch_curve_d0 = LinearCurve(a=-0.8, b=1)
@@ -100,6 +130,22 @@ class Firework(Calc):
         self.blow_curve_d0 = LinearCurve(a=1)
         self.blow_curve_d1 = CappedCurve(LinearCurve(a=0.85, b=0.15), maxi=1)
 
+        degree = 5
+        poly = [-1] + [0 for _ in range(degree - 2)] + [1]
+        self.first_intensity_curve = PolynomCurve(poly)
+        xP4 = (
+            self.first_intensity_curve
+        )  # ComposedCurve(QuadraticCurve(a=-0.85, b=0.8), self.first_intensity_curve)
+        flickering = float(flickering)
+        ondulation = SinCurve(
+            7 * np.math.pi,
+            ampl=0.02 * flickering,
+            phase=np.math.pi / 2,
+            dec=1 - 0.025 * flickering,
+        )
+        curve = MulCurve(xP4, ondulation)
+        self.intensity_curve = CappedCurve(curve, 0, 1)
+
         master.add_size_listener(self)
 
     def set_dim(self, width: int, height: int):
@@ -107,6 +153,7 @@ class Firework(Calc):
         self.height = height  # // 2
         self.image_processed = Image.new("RGBA", (self.width * 2, self.height * 2))
         self.image_drawer = ImageDraw.ImageDraw(self.image_processed, mode="RGBA")
+        self.lumiere.set_dist(np.math.sqrt(self.width ** 2 + self.height ** 2))
 
     def enter_phase(self, phase: int):
         if phase == self.FW_PAUSE:
@@ -125,6 +172,7 @@ class Firework(Calc):
         self.duration = (
             random.random() * (self.max_pause - self.min_pause) + self.min_pause
         )
+        self.lumiere.set_intensity(0)
 
     def enter_launch(self):
         self.phase = self.FW_LAUNCH
@@ -138,9 +186,23 @@ class Firework(Calc):
             random.random() * (self.max_intensity - self.min_intensity)
             + self.min_intensity
         )
-        self.color = random.choice(self.colors)
+        color = random.choice(self.colors)
+        while color == self.color:
+            color = random.choice(self.colors)
+        self.color = color
         self.final_x = 2 * random.randint(self.min_x, self.max_x)
         self.final_y = 2 * random.randint(self.min_y, self.max_y)
+
+        self.lumiere.set_color(self.color)
+        color_coeff_s = (self.intensity) / (self.max_intensity + self.min_intensity)
+        color_coeff_v = color_coeff_s * self.intensity / self.max_intensity
+        t, s, v = self.lumiere.color_tsv
+        self.lumiere.color_tsv = (
+            t,
+            s * color_coeff_s,
+            v * color_coeff_v,
+        )
+        self.lumiere.set_coords((self.final_x / 2, self.final_y / 2))
 
         self.ref_dist = abs(self.final_y - self.start_y * 2)
         alpha = math.pi / 2
@@ -151,11 +213,11 @@ class Firework(Calc):
         self.phase = self.FW_BLOW
 
         self.time = 0
-        self.ref_dist = 0.2 * self.ref_dist * self.intensity
+        self.ref_dist = 0.2 * self.ref_dist * self.intensity * self.size_amplifier
         nb_step = 6
         self.rays.clear()
         step = 2 * math.pi / nb_step
-        alpha = random.random() * math.pi
+        alpha = random.random() * 2 * math.pi
         for i in range(nb_step):
             self.rays.append(alpha)
             alpha += step
@@ -179,7 +241,6 @@ class Firework(Calc):
 
     def compute_blow(self, output: Union[str, OutputImage]):
         if self.time > self.duration * (1 - self.LAUNCH_TIME_PROP):
-            # TODO put intensity to 0
             self.enter_phase(self.FW_PAUSE)
             return
         self.image_processed.paste(
@@ -187,7 +248,7 @@ class Firework(Calc):
         )  # clear image
 
         t = self.time / (self.duration * (1 - self.LAUNCH_TIME_PROP))
-        # TODO decrease intensity of effect
+        self.lumiere.set_intensity(self.intensity_curve.calc(t) * self.intensity)
         for ray in self.rays:
             d0 = self.blow_curve_d0.calc(t) * self.ref_dist
             d1 = self.blow_curve_d1.calc(t) * self.ref_dist
@@ -218,7 +279,6 @@ class Firework(Calc):
 
     def compute_launch(self, output: Union[str, OutputImage]):
         if self.time > self.duration * self.LAUNCH_TIME_PROP:
-            # TODO put density to 0
             self.enter_phase(self.FW_BLOW)
             return
         self.image_processed.paste(
@@ -245,9 +305,6 @@ class Firework(Calc):
         else:
             self.out_buffer[:, :, 3] /= 255
             output.paste_on(self)
-
-    def open(self, filename: str):
-        pass
 
     def reset(self):
         self.enter_phase(self.FW_PAUSE)

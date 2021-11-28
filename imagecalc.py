@@ -24,4 +24,4 @@ class ImageCalc(Calc):
         self.buffer = np.array(img).astype(np.float32)
         self.buffer[:, :, 3] /= 255.0
         self.out_buffer = np.copy(self.buffer)
-        self.width, self.height, _ = self.buffer.shape
+        self.height, self.width, _ = self.buffer.shape

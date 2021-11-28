@@ -25,16 +25,18 @@ class OutputImage:
         if fusion_mode is None:
             fusion_mode = FusionLinear()
         self.fusion_mode = fusion_mode
-        self.buffer = np.full((self.width, self.height, 4), 0)
+        self.buffer = np.full((self.height, self.width, 4), 0)
 
     def paste_on(self, calc: "Calc"):
         buffer = calc.out_buffer
-        w, h, _ = buffer.shape
+        h, w, _ = buffer.shape
         w, h = min(w, calc.width), min(h, calc.height)
         x, y = calc.coords
         fx, fy = min(self.width, x + w), min(self.height, y + h)
-        self.buffer[x:fx, y:fy] = self.fusion_mode.fuse(
-            self.buffer[x:fx, y:fy], buffer[:w, :h]
+        w = fx - x
+        h = fy - y
+        self.buffer[y:fy, x:fx] = self.fusion_mode.fuse(
+            self.buffer[y:fy, x:fx], buffer[:h, :w]
         )
 
     def reset(self):

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Pyrffect out="test_feu.mp4" framerate="30" duration="10" remove="true" width="400" height="400">
+    <flat color="50,50,50"/>
+    <firework x_stat="17,385" y_stat="28,258,400" duration="2,3" intensity="1,1.2" pause="0.2,0.3" colors="all" name_effect="boum" ray_width="10" size_amplifier="1"/>
+    <calc filename="bon.png" x="174" y="301">
+        <named name="boum"/>
+    </calc>
+</Pyrffect>

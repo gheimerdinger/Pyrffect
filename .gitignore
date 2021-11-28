@@ -2,3 +2,5 @@ OUT/*
 *.pyc
 *.mp4
 log*
+final/OUT/*
+test/OUT/*
