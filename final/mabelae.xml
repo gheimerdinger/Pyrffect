@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Pyrffect framerate="30" duration="21" out="mabelae.mp4" remove="true">
+<Pyrffect framerate="30" duration="366" out="mabelae.mp4" remove="true">
 
     <calc filename="fond_final.png"/>
-    <firework x_stat="180,621" y_stat="105,379,1200" duration="2.5,3.5" intensity="0.9,0.95" pause="0.3,0.7" colors="255,0,80;38,165,61;255,191,0;61,191,247;184,109,255" name_effect="boum" ray_width="18" size_amplifier="2" flickering="0.25">
+    <firework x_stat="180,621" y_stat="105,379,1200" duration="2.5,3.5" intensity="0.95,0.98" pause="0.3,0.7" colors="255,0,80;38,165,61;255,191,0;61,191,247;184,109,255" name_effect="boum" ray_width="18" size_amplifier="2" flickering="0.25">
         <pixel square_size="28" ticks="1" displace_probability="0.95" area_covered="0.95"/>
     </firework>
 
