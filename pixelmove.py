@@ -42,13 +42,13 @@ class PixelMove(Effect):
         else:
             self.apply_dirty(other)
 
-    def apply_dirty(self, other: "calc.Calc"):
+    def apply_dirty(self, other: Calc):
         mp = Pool(len(self.last_transform))
         self.tmp_other = other
         mp.starmap(self.move, self.last_transform)
         mp.close()
 
-    def apply_clean(self, other: "calc.Calc"):
+    def apply_clean(self, other: Calc):
         dim = self.last_transform.shape[0]
         self.tmp_other = other
         for i in range(dim):

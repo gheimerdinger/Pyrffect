@@ -4,5 +4,7 @@ OUT/*
 log*
 final/OUT/*
 test/OUT/*
-*/stats
-*/pstats
+final/stats
+final/pstats
+stats
+pstats

@@ -17,7 +17,8 @@ def rgb_to_tsv(buffer):
     s = np.full(buffer.shape[:-1], 0, dtype=np.float32)
 
     mask = maxi > 0.0001
-    s[mask] = (1 - mini / maxi)[mask]
+    with np.errstate(divide='ignore', invalid='ignore'):
+        s[mask] = (1 - mini / maxi)[mask]
     v = maxi / 255
     delta = np.divide(
         np.full(maxi.shape, 60, dtype=np.float32),

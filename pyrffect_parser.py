@@ -82,7 +82,7 @@ def parse_calc(nd: Et.Element, w, h, master=None):
 
 
 if __name__ == "__main__":
-    DEBUG = True
+    DEBUG = False
     if DEBUG:
         import cProfile, pstats
 
@@ -132,15 +132,18 @@ if __name__ == "__main__":
 
     framerate = 60
     duration = 10
+    out = "res.mp4"
     if "duration" in root.attrib:
         duration = int(root.attrib["duration"])
     if "framerate" in root.attrib:
         framerate = int(root.attrib["framerate"])
+    if "out" in root.attrib:
+        out = root.attrib["out"]
 
     opts, args = getopt.getopt(
         sys.argv[2:],
-        "f:d:",
-        ["duration=", "framerate="],
+        "f:d:o:",
+        ["duration=", "framerate=", "out="],
     )
     for o, a in zip(opts, args):
         print(o, a)
@@ -148,29 +151,24 @@ if __name__ == "__main__":
             framerate = int(a)
         elif o in ("-d", "--duration"):
             duration = int(a)
-
+        elif o in ("-o", "--out"):
+            out = a
+    if not out.endswith(".mp4"):
+        out += ".mp4"
+    
     try:
         if DEBUG:
-            cProfile.run("p.compute(duration * framerate)", "stats")
+            cProfile.run("p.compute(out, framerate, duration * framerate)", "stats")
             stat = pstats.Stats("stats")
             stat.strip_dirs()
             stat.dump_stats("pstats")
         else:
-            p.compute(duration * framerate)
+            p.compute(out, framerate, duration * framerate)
     except KeyboardInterrupt:
         print("Only part of the images were generated")
         if p.last_valid is None:
             print("No valid images were created, stopping", file=sys.stderr)
             sys.exit(2)
-        invalid_file = (
-            f"{p.output_directory}/{p.output_fileformat.format(p.last_valid + 1)}"
-        )
-        if os.path.exists(invalid_file):
-            os.remove(invalid_file)
-
-    if "out" in root.attrib:
-        command = f"ffmpeg -r 30 -f image2 -i OUT/img%d.png -vcodec libx264 -crf 25 {root.attrib['out']}"
-        os.system(command)
-
-    if "remove" in root.attrib and root.attrib["remove"] in ("true", "t", "1"):
-        os.system("rm OUT/img*.png")
+        sys.exit(1)
+    print("Success of the video creation")
+    sys.exit(0)

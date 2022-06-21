@@ -8,10 +8,11 @@
             "name": "Final",
             "type": "python",
             "request": "launch",
-            "program": "pyrffect_parser.py",
+            "cwd": "${workspaceFolder}/final",
+            "program": "../pyrffect_parser.py",
             "console": "integratedTerminal",
             "args": [
-                "final_hope.xml"
+                "mabelae.xml"
             ]
         },
         {

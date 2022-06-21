@@ -110,10 +110,10 @@ class Pyrffect:
 
         return [(e) for (_, e) in split(calcs)]
 
-    def compute(self, frame: int):
+    def compute(self, out: str, framerate: int, frame: int):
         if self.width is None or self.height is None:
             raise Exception("No valid dimension to compite the pyrffect.")
-        output_result = OutputImage(self.width, self.height, self.fusion_mode)
+        output_result = OutputImage(self.width, self.height, framerate, out, self.fusion_mode)
         orderer_calc = self._fuse()
         for c in orderer_calc:
             c.reset()
@@ -122,6 +122,6 @@ class Pyrffect:
             filename = (self.output_directory + "/" + self.output_fileformat).format(i)
             for c in orderer_calc:
                 c.compute(output_result)
-            output_result.save(filename)
+            output_result.save(i+1, frame)
             output_result.reset()
             self.last_valid = i
