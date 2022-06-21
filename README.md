@@ -86,3 +86,4 @@ Effet déplacant aléatoirement des carrés de pixels de l'image
   
 
 <iframe  width="560"  height="315"  src="https://www.youtube.com/embed/ReNQJnsXjBM"  title="YouTube video player"  frameborder="0"  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"  allowfullscreen></iframe>
+<a href="https://www.youtube.com/ReNQJnsXjBM">Si la vidéo n'est pas disponible.</a>
