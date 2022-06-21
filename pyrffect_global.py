@@ -1,11 +1,6 @@
-from tkinter.constants import E
-from PIL import Image, ImageTk
+from PIL import Image
 import numpy as np
-from numpy.core.numeric import full
-from numpy.ma.core import where
 
-
-import matplotlib.pyplot as pl
 
 
 def rgb_to_tsv(buffer):
@@ -66,6 +61,7 @@ def tsv_to_rgb(t, s, v, alpha):
 
 if __name__ == "__main__":
     import tkinter as tk
+    from PIL import ImageTk
 
     class Vizualizer(tk.Frame):
         def __init__(self, master):
@@ -154,7 +150,7 @@ if __name__ == "__main__":
             try:
                 self.image.save(filename)
             except Exception as e:
-                self.message("Error while reading : " + str(E))
+                self.message("Error while reading : " + str(tk.E))
 
         def message(self, text):
             self.msg.set("> " + text)

@@ -1,5 +1,4 @@
 import numpy as np
-import random
 from calc import Calc
 from multiprocessing import Pool
 import effect

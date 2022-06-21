@@ -1,4 +1,4 @@
-from typing import Any, Iterator, Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union
 import numpy as np
 from PIL import Image
 import effect

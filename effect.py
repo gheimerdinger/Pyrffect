@@ -1,4 +1,3 @@
-from typing import Iterator
 import numpy as np
 import calc
 

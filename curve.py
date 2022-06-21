@@ -1,11 +1,7 @@
 import os
-from tkinter import CallWrapper, Widget
 from typing import List, Tuple, Union
-from PIL.Image import TRANSPOSE
 import numpy as np
 import datetime
-
-from numpy.core.numerictypes import maximum_sctype
 
 
 class Curve:
